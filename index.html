@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dream Vacation Planner</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #a18cd1, #fbc2eb);
+      padding: 40px;
+      transition: background-image 0.5s ease-in-out;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      max-width: 650px;
+      margin: auto;
+    }
+
+    h1, #greeting {
+      text-align: center;
+      color: #6a0dad;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    #summary {
+      margin-top: 30px;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-left: 5px solid #6a0dad;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #6a0dad;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #8a2be2;
+    }
+
+    select, input[type="date"] {
+      margin-top: 10px;
+      padding: 8px;
+      width: 100%;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .fun-checkbox {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+    }
+
+    .fun-checkbox input[type="checkbox"] {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background-color: #e6e6fa;
+      border: 2px solid #6a0dad;
+      border-radius: 5px;
+      margin-right: 10px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .fun-checkbox input[type="checkbox"]:checked {
+      background-color: #dda0dd;
+    }
+
+    .fun-checkbox input[type="checkbox"]:checked::after {
+      content: '✔';
+      color: #6a0dad;
+      position: absolute;
+      top: 0px;
+      left: 4px;
+      font-size: 16px;
+    }
+
+    #mood-display, #countdown, #fact, #weather {
+      text-align: center;
+      font-size: 1.1em;
+      margin-top: 15px;
+    }
+
+    #packing-checklist {
+      margin-top: 15px;
+    }
+
+    #map {
+      width: 100%;
+      height: 400px;
+      margin-top: 30px;
+    }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Plan Your Dream Vacation!</h1>
+    <p id="greeting"></p>
+
+    <label for="destination">Choose a destination:</label>
+    <select id="destination">
+      <option value="Paris">Paris</option>
+      <option value="Tokyo">Tokyo</option>
+      <option value="Goa">Goa</option>
+      <option value="Maldives">Maldives</option>
+      <option value="New York">New York</option>
+      <option value="Switzerland">Switzerland</option>
+      <option value="Dubai">Dubai</option>
+      <option value="Bali">Bali</option>
+      <option value="London">London</option>
+      <option value="Rome">Rome</option>
+    </select>
+
+    <label>Pick your activities:</label>
+    <div class="fun-checkbox"><input type="checkbox" id="shopping" value="Shopping"> <label for="shopping">Shopping</label></div>
+    <div class="fun-checkbox"><input type="checkbox" id="museum" value="Museum Tours"> <label for="museum">Museum Tours</label></div>
+    <div class="fun-checkbox"><input type="checkbox" id="diving" value="Scuba Diving"> <label for="diving">Scuba Diving</label></div>
+    <div class="fun-checkbox"><input type="checkbox" id="hiking" value="Hiking"> <label for="hiking">Hiking</label></div>
+    <div class="fun-checkbox"><input type="checkbox" id="theme" value="Theme Park"> <label for="theme">Theme Park</label></div>
+    <div class="fun-checkbox"><input type="checkbox" id="food" value="Local Food Tasting"> <label for="food">Local Food Tasting</label></div>
+    <div class="fun-checkbox"><input type="checkbox" id="skiing" value="Skiing"> <label for="skiing">Skiing</label></div>
+    <div class="fun-checkbox"><input type="checkbox" id="safari" value="Wildlife Safari"> <label for="safari">Wildlife Safari</label></div>
+    <div class="fun-checkbox"><input type="checkbox" id="spa" value="Spa & Relaxation"> <label for="spa">Spa & Relaxation</label></div>
+    <div class="fun-checkbox"><input type="checkbox" id="cruise" value="Cruise Ride"> <label for="cruise">Cruise Ride</label></div>
+
+    <label for="start">Start Date:</label>
+    <input type="date" id="start" />
+
+    <label for="end">End Date:</label>
+    <input type="date" id="end" />
+
+    <button onclick="showSummary()">Show My Plan</button>
+    <button onclick="resetForm()">Reset</button>
+
+    <div id="summary"></div>
+    <div id="countdown"></div>
+    <div id="fact"></div>
+    <div id="weather"></div>
+    <div id="mood-display"></div>
+    <div id="packing-checklist"></div>
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    function showGreeting() {
+      const greeting = document.getElementById("greeting");
+      const hour = new Date().getHours();
+      if (hour < 12) greeting.innerText = "Good Morning! 🌞 Ready to plan your dream trip?";
+      else if (hour < 18) greeting.innerText = "Good Afternoon! 🌤 Let’s make a vacation plan!";
+      else greeting.innerText = "Good Evening! 🌙 Start planning your dream holiday!";
+    }
+
+    function updateBackground(destination) {
+      const body = document.body;
+      const imageQuery = encodeURIComponent(destination);
+      body.style.backgroundImage = `url('https://source.unsplash.com/1600x900/?${imageQuery}')`;
+      body.style.backgroundSize = "cover";
+      body.style.backgroundRepeat = "no-repeat";
+    }
+
+    function showSummary() {
+      const destination = document.getElementById("destination").value;
+      const activities = [];
+      document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        if (checkbox.checked) activities.push(checkbox.value);
+      });
+
+      const startDate = document.getElementById("start").value;
+      const endDate = document.getElementById("end").value;
+
+      const today = new Date();
+      const tripStart = new Date(startDate);
+      const daysLeft = Math.ceil((tripStart - today) / (1000 * 60 * 60 * 24));
+      let countdownText = '';
+      if (!isNaN(daysLeft) && daysLeft > 0) {
+        countdownText = `<p>⏳ Your trip starts in <strong>${daysLeft}</strong> day(s)!</p>`;
+      }
+
+      updateBackground(destination);
+
+      const summary = `
+        <h3>Your Vacation Plan:</h3>
+        <p><strong>Destination:</strong> ${destination}</p>
+        <p><strong>Dates:</strong> ${startDate} to ${endDate}</p>
+        <p><strong>Activities:</strong> ${activities.join(", ") || "None selected"}</p>
+      `;
+
+      document.getElementById("summary").innerHTML = summary + countdownText;
+      showCountdown();
+      showFact(destination);
+      showWeather(destination);
+      showPackingList(destination);
+      showMoodBar();
+      initMap(destination);
+    }
+
+    function showCountdown() {
+      const tripDate = new Date(document.getElementById("start").value);
+      const today = new Date();
+      const timeDifference = tripDate - today;
+      const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+      document.getElementById("countdown").innerHTML = `${days} Days ${hours} Hours ${minutes} Minutes until your trip!`;
+    }
+
+    function showFact(destination) {
+      const facts = {
+        "Paris": "Paris has over 130 museums!",
+        "Tokyo": "Tokyo is home to the world’s busiest railway station.",
+        "Goa": "Goa is famous for its beautiful beaches and vibrant nightlife.",
+        "Maldives": "The Maldives is made up of over 1,000 islands!",
+        "New York": "New York's Central Park is bigger than the principality of Monaco.",
+        "Switzerland": "Switzerland is famous for its beautiful mountain ranges and ski resorts.",
+        "Dubai": "Dubai is home to the tallest building in the world, the Burj Khalifa.",
+        "Bali": "Bali is known for its lush landscapes and vibrant cultural scene.",
+        "London": "London has 6,000 pubs and countless historic landmarks.",
+        "Rome": "Rome has 280 fountains and 280 churches."
+      };
+      document.getElementById("fact").innerHTML = facts[destination] || "No fun fact available.";
+    }
+
+    function showWeather(destination) {
+      const weather = {
+        "Paris": "🌧️ Expected weather in Paris: 18°C, Rainy",
+        "Tokyo": "🌤️ Expected weather in Tokyo: 25°C, Partly Cloudy",
+        "Goa": "🌞 Expected weather in Goa: 32°C, Sunny",
+        "Maldives": "🌤️ Expected weather in Maldives: 29°C, Sunny",
+        "New York": "🌥️ Expected weather in New York: 22°C, Partly Cloudy",
+        "Switzerland": "❄️ Expected weather in Switzerland: -2°C, Snowy",
+        "Dubai": "🌞 Expected weather in Dubai: 35°C, Hot",
+        "Bali": "🌤️ Expected weather in Bali: 28°C, Warm",
+        "London": "🌦️ Expected weather in London: 15°C, Showers",
+        "Rome": "🌞 Expected weather in Rome: 20°C, Sunny"
+      };
+      document.getElementById("weather").innerHTML = weather[destination] || "Weather information unavailable.";
+    }
+
+    function showPackingList(destination) {
+      const packingItems = {
+        "Paris": ["🧳 Passport", "👒 Sunscreen", "🧥 Jacket"],
+        "Tokyo": ["🧳 Passport", "🎒 Comfortable Shoes", "🧥 Jacket"],
+        "Goa": ["🧳 Passport", "👒 Sunscreen", "👙 Beachwear"],
+        "Maldives": ["🧳 Passport", "👒 Sunscreen", "👙 Beachwear"],
+        "New York": ["🧳 Passport", "🧥 Jacket", "🎒 Comfortable Shoes"],
+        "Switzerland": ["🧳 Passport", "🧥 Jacket", "🥾 Hiking Boots"],
+        "Dubai": ["🧳 Passport", "👒 Sunscreen", "🧥 Jacket"],
+        "Bali": ["🧳 Passport", "👒 Sunscreen", "👙 Beachwear"],
+        "London": ["🧳 Passport", "🧥 Jacket", "🎒 Comfortable Shoes"],
+        "Rome": ["🧳 Passport", "🎒 Comfortable Shoes", "🧥 Jacket"]
+      };
+
+      let packingList = packingItems[destination] || ["🧳 Passport"];
+      document.getElementById("packing-checklist").innerHTML = `<h4>Packing Checklist:</h4><ul><li>${packingList.join("</li><li>")}</li></ul>`;
+    }
+
+    function showMoodBar() {
+      let moodHTML = `
+        <p>How excited are you for your trip?</p>
+        <button onclick="setMood('😐')">😐</button>
+        <button onclick="setMood('🙂')">🙂</button>
+        <button onclick="setMood('😄')">😄</button>
+        <button onclick="setMood('🤩')">🤩</button>
+        <p id="mood-display"></p>
+      `;
+      document.getElementById("mood-display").innerHTML = moodHTML;
+    }
+
+    function setMood(mood) {
+      document.getElementById("mood-display").innerText = `Your excitement level: ${mood}`;
+    }
+
+    function initMap(destination) {
+      const coordinates = {
+        "Paris": [48.8566, 2.3522],
+        "Tokyo": [35.6762, 139.6503],
+        "Goa": [15.2993, 74.1240],
+        "Maldives": [3.2028, 73.2207],
+        "New York": [40.7128, -74.0060],
+        "Switzerland": [46.8182, 8.2275],
+        "Dubai": [25.276987, 55.296249],
+        "Bali": [-8.3405, 115.0920],
+        "London": [51.5074, -0.1278],
+        "Rome": [41.9028, 12.4964]
+      };
+
+      const coords = coordinates[destination] || [51.505, -0.09];
+      const map = L.map('map').setView(coords, 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      L.marker(coords).addTo(map).bindPopup(destination).openPopup();
+    }
+
+    function resetForm() {
+      document.getElementById("destination").selectedIndex = 0;
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.getElementById("start").value = "";
+      document.getElementById("end").value = "";
+      document.getElementById("summary").innerHTML = "";
+      document.getElementById("countdown").innerHTML = "";
+      document.getElementById("fact").innerHTML = "";
+      document.getElementById("weather").innerHTML = "";
+      document.getElementById("mood-display").innerHTML = "";
+      document.getElementById("packing-checklist").innerHTML = "";
+      document.getElementById("map").innerHTML = "";
+      document.body.style.backgroundImage = "none";
+      document.body.style.background = "linear-gradient(135deg, #a18cd1, #fbc2eb)";
+    }
+
+    showGreeting();
+  </script>
+</body>
+</html>
